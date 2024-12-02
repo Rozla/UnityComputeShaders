@@ -118,12 +118,20 @@ public class Challenge5 : MonoBehaviour {
 
 	void Start() {
 		//1. Get the VoxelizeMesh component
+		VoxelizeMesh voxelizeMesh = GetComponent<VoxelizeMesh>();
 		//2. Use meshToVoxelize as the property mesh
+		voxelizeMesh.Voxelize(voxelizeMesh.meshToVoxelize);
 		//3. Use it to voxelize its mesh
+		mesh = voxelizeMesh.meshToVoxelize;
 		//4. Set the particleInitialPositions to the PositionList
+		particleInitialPositions = voxelizeMesh.PositionList;
 		//5. Set the particlesPerBody
+		particlesPerBody = particleInitialPositions.Count;
 		//6. Set vertex count
+		vertexCount = mesh.GetIndexCount(0);
 		//7. Set the particle diameter
+		particleDiameter = voxelizeMesh.ParticleSize;
+
 
 		InitArrays();
 

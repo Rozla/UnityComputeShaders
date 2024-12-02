@@ -10,7 +10,7 @@ public class GrassTerrain : MonoBehaviour
         public float lean;
         public float noise;
 
-        public GrassClump( Vector3 pos)
+        public GrassClump(Vector3 pos)
         {
             position.x = pos.x;
             position.y = pos.y;
@@ -25,9 +25,9 @@ public class GrassTerrain : MonoBehaviour
     public Mesh mesh;
     public Material material;
     public ComputeShader shader;
-    [Range(0,3)]
+    [Range(0, 3)]
     public float density = 0.8f;
-    [Range(0.1f,3)]
+    [Range(0.1f, 3)]
     public float scale = 0.2f;
     [Range(10, 45)]
     public float maxLean = 25;
@@ -92,6 +92,47 @@ public class GrassTerrain : MonoBehaviour
     void InitPositionsArray(int count, Bounds bounds)
     {
         clumpsArray = new GrassClump[count];
+
+        gameObject.AddComponent<MeshCollider>();
+
+        RaycastHit hit;
+        Vector3 v = new Vector3();
+        v.y = (bounds.center.y + bounds.extents.y);
+        v = transform.TransformPoint(v);
+        float castY = v.y;
+        v.Set(0, 0, 0);
+        v.y = (bounds.center.y - bounds.extents.y);
+        v = transform.TransformPoint(v);
+        float minY = v.y;
+        float range = castY - minY;
+        castY += 10;
+
+        int loopCount = 0;
+        int index = 0;
+
+        while (index < count && loopCount < (count * 10))
+        {
+            loopCount++;
+
+            Vector3 pos = new Vector3((Random.value * bounds.extents.x * 2 - bounds.extents.x) + bounds.center.x, 0.0f, (Random.value * bounds.extents.z * 2 - bounds.extents.z) + bounds.center.z);
+            pos = transform.TransformPoint(pos);
+            pos.y = castY;
+
+            if (Physics.Raycast(pos, Vector3.down, out hit))
+            {
+                pos.y = hit.point.y;
+                float deltaHeight = ((pos.y - minY) / range) * heightAffect;
+
+                if (Random.value < deltaHeight)
+                {
+                    GrassClump clump = new GrassClump(pos);
+                    clumpsArray[index++] = clump;
+
+                }
+            }
+        }
+
+        Debug.Log("GrassTerrain:InitPositionArray count: " + count + " inde");
     }
 
     // Update is called once per frame

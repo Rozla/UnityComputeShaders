@@ -405,5 +405,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 756fdf376924444448447023079e37cc, type: 3}
   texResolution: 1024
-  clearColor: {r: 0, g: 0, b: 0, a: 0}
-  circleColor: {r: 0, g: 0, b: 0, a: 0}
+  clearColor: {r: 0, g: 0.18928123, b: 1, a: 1}
+  circleColor: {r: 1, g: 0.0141509175, b: 0.73725194, a: 1}

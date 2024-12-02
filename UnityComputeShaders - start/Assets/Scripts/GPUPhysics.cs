@@ -113,34 +113,126 @@ public class GPUPhysics : MonoBehaviour {
 
 	void InitArrays()
     {
-		
+		particlesPerBody = particlesPerEdge * particlesPerEdge * particlesPerEdge;
+		rigidBodiesArray = new RigidBody[rigidBodyCount];
+		particlesArray = new Particle[rigidBodyCount * particlesPerBody];
+		argsArray = new uint[] { 0, 0, 0, 0, 0 };
 	}
 
 	void InitRigidBodies()
     {
-		
+		int pIndex = 0;
+
+		for (int i = 0; i < rigidBodyCount; i++) 
+		{
+			Vector3 pos = Random.insideUnitSphere * 5.0f;
+			pos.y += 15.0f;
+			pIndex = i * particlesPerBody; // Comment if not working
+			rigidBodiesArray[i] = new RigidBody(pos, pIndex, particlesPerBody);
+			//pIndex += particlesPerBody; // Uncomment if not working
+        }
 	}
 
 	void InitParticles()
     {
-		
+		particleDiameter = scale / particlesPerEdge;
+		int index = 0;
+		float centerer = (particleDiameter - scale) * 0.5f;
+		Vector3 offset = new Vector3(centerer, centerer, centerer);
+
+		for (int x = 0; x < particlesPerEdge; x++)
+		{
+			for(int y = 0; y < particlesPerEdge; y++)
+			{
+                for (int z = 0; z < particlesPerEdge; z++)
+                {
+					Vector3 pos = offset + new Vector3(x, y, z) * particleDiameter;
+
+					for(int i = 0; i < rigidBodyCount; i++)
+					{
+						RigidBody body = rigidBodiesArray[i];
+						particlesArray[body.particleIndex + index] = new Particle(pos);
+					}
+					index++;
+                }
+            }
+		}
 	}
 
 	void InitBuffers()
     {
-		
+		rigidBodiesBuffer = new ComputeBuffer(rigidBodyCount, SIZE_RIGIDBODY);
+		rigidBodiesBuffer.SetData(rigidBodiesArray);
+
+		int numOfParticles = rigidBodyCount * particlesPerBody;
+		particlesBuffer = new ComputeBuffer(numOfParticles, SIZE_PARTICLE);
+		particlesBuffer.SetData(particlesArray);
 	}
 
 	void InitShader()
 	{
-			
+		deltaTimeID = Shader.PropertyToID("deltaTime");
+		shader.SetInt("particlesPerRigidBody", particlesPerBody);
+		shader.SetFloat("particleDiameter", particleDiameter);
+		shader.SetFloat("springCoefficient", springCoefficient);
+		shader.SetFloat("dampingCoefficient", dampingCoefficient);
+		shader.SetFloat("frictionCoefficient", frictionCoefficient);
+		shader.SetFloat("angularFrictionCoefficient", angularFrictionCoefficient);
+		shader.SetFloat("gravityCoefficient", gravityCoefficient);
+		shader.SetFloat("tangentialCoefficient", tangentialCoefficient);
+		shader.SetFloat("angularForceScalar", angularForceScalar);
+		shader.SetFloat("linearForceScalar", linearForceScalar);
+		shader.SetFloat("particleMass", cubeMass / particlesPerBody);
+		int particleCount = rigidBodyCount * particlesPerBody;
+		shader.SetInt("particleCount", particleCount);
+
+		kernelGenerateParticleValues = shader.FindKernel("GenerateParticleValues");
+		kernelCollisionDetection = shader.FindKernel("CollisionDetection");
+		kernelComputeMomenta = shader.FindKernel("ComputeMomenta");
+		kernelComputePositionAndRotation = shader.FindKernel("ComputePositionAndRotation");
+
+        groupsPerRigidBody = Mathf.CeilToInt(rigidBodyCount / 8.0f);
+        groupsPerParticle = Mathf.CeilToInt(particleCount / 8f);
+
+        shader.SetBuffer(kernelGenerateParticleValues, "rigidBodiesBuffer", rigidBodiesBuffer);
+		shader.SetBuffer(kernelGenerateParticleValues, "particlesBuffer", particlesBuffer);
+		shader.SetBuffer(kernelCollisionDetection, "particlesBuffer", particlesBuffer);
+		shader.SetBuffer(kernelComputeMomenta, "rigidBodiesBuffer", rigidBodiesBuffer);
+		shader.SetBuffer(kernelComputeMomenta, "particlesBuffer", particlesBuffer);
+		shader.SetBuffer(kernelComputePositionAndRotation, "rigidBodiesBuffer", rigidBodiesBuffer);
 	}
 
-	void InitInstancing() {
-		
+	void InitInstancing() 
+	{
+		cubeMaterial.SetBuffer("rigidBodiesBuffer", rigidBodiesBuffer);
+
+		argsArray[0] = cubeMesh.GetIndexCount(0);
+		argsBuffer = new ComputeBuffer(1, argsArray.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+		argsBuffer.SetData(argsArray);
 	}
 
 	void Update() {
+		if(activeCount< rigidBodyCount && frameCounter++ > 5)
+		{
+			activeCount++;
+			frameCounter = 0;
+			shader.SetInt("activeCount", activeCount);
+			argsArray[1] = (uint)activeCount;
+
+			argsBuffer.SetData(argsArray);
+		}
+
+		float dt = Time.deltaTime / stepsPerUpdate;
+		shader.SetFloat(deltaTimeID, dt);
+
+		for(int i = 0; i< stepsPerUpdate; i++)
+		{
+			shader.Dispatch(kernelGenerateParticleValues, groupsPerRigidBody, 1, 1);
+			shader.Dispatch(kernelCollisionDetection, groupsPerParticle, 1, 1);
+			shader.Dispatch(kernelComputeMomenta, groupsPerRigidBody, 1, 1);
+			shader.Dispatch(kernelComputePositionAndRotation, groupsPerRigidBody, 1, 1);
+		}
+
         Graphics.DrawMeshInstancedIndirect(cubeMesh, 0, cubeMaterial, bounds, argsBuffer);
 	}
 

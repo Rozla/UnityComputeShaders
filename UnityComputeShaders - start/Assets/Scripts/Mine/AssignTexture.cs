@@ -1,18 +1,16 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-public class SolidColor : MonoBehaviour
+public class AssignTexture : MonoBehaviour
 {
     public ComputeShader shader;
     public int texResolution = 256;
-    public string kernelName = "SolidRed";
-
     Renderer rend;
     RenderTexture outputTexture;
-
     int kernelHandle;
 
-    // Use this for initialization
+    // Start is called before the first frame update
     void Start()
     {
         outputTexture = new RenderTexture(texResolution, texResolution, 0);
@@ -25,22 +23,21 @@ public class SolidColor : MonoBehaviour
         InitShader();
     }
 
-    private void InitShader()
+    void InitShader()
     {
-        kernelHandle = shader.FindKernel(kernelName);
-
+        kernelHandle = shader.FindKernel("CSMain");
         shader.SetTexture(kernelHandle, "Result", outputTexture);
-        shader.SetInt("texResolution", texResolution);
         rend.material.SetTexture("_MainTex", outputTexture);
 
-        DispatchShader(texResolution / 8, texResolution / 8);
+        DispatchShader(texResolution / 16, texResolution / 16);
     }
 
-    private void DispatchShader(int x, int y)
+    void DispatchShader(int x, int y)
     {
         shader.Dispatch(kernelHandle, x, y, 1);
     }
 
+    // Update is called once per frame
     void Update()
     {
         if (Input.GetKeyUp(KeyCode.U))
@@ -49,4 +46,3 @@ public class SolidColor : MonoBehaviour
         }
     }
 }
-

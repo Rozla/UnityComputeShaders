@@ -75,6 +75,11 @@ Shader "Flocking/Skinned" { // StructuredBuffer + SurfaceShader
         void vert(inout appdata_custom v)
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
+                #ifdef FRAME_INTERPOLATION
+                    v.vertex = lerp(vertexAnimation[v.id * numOfFrames + _CurrentFrame], vertexAnimation[v.id * numOfFrames + _NextFrame], _FrameInterpolation);
+                #else
+                    v.vertex = vertexAnimation[v.id * numOfFrames + _CurrentFrame];
+                #endif
                 v.vertex = mul(_Matrix, v.vertex);
             #endif
         }
@@ -83,6 +88,12 @@ Shader "Flocking/Skinned" { // StructuredBuffer + SurfaceShader
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 _Matrix = create_matrix(boidsBuffer[unity_InstanceID].position, boidsBuffer[unity_InstanceID].direction, float3(0.0, 1.0, 0.0));
+                _CurrentFrame = boidsBuffer[unity_InstanceID].frame;
+                #ifdef FRAME_INTERPOLATION
+                    _NextFrame = _CurrentFrame + 1;
+                    if(_NextFrame >= numOfFrames) _NextFrame = 0;
+                    _FrameInterpolation = frac(boidsBuffer[unity_InstanceID].frame);
+                #endif
             #endif
         }
  

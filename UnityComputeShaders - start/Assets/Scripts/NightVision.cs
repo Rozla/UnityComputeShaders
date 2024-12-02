@@ -5,6 +5,9 @@ using UnityEngine;
 [ExecuteInEditMode]
 public class NightVision : BaseCompletePP
 {
+    [Range(1, 100)]
+    public int pixelStrenght = 1;
+
     [Range(0.0f, 100.0f)]
     public float radius = 70;
     [Range(0.0f, 1.0f)]
@@ -36,6 +39,9 @@ public class NightVision : BaseCompletePP
     protected override void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
         shader.SetFloat("time", Time.time);
+        shader.SetInt("pixelStrength", pixelStrenght);
         base.OnRenderImage(source, destination);
     }
+
+    
 }

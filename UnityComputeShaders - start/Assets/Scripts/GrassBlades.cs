@@ -11,7 +11,7 @@ public class GrassBlades : MonoBehaviour
         public float noise;
         public float fade;
 
-        public GrassBlade( Vector3 pos)
+        public GrassBlade(Vector3 pos)
         {
             position.x = pos.x;
             position.y = pos.y;
@@ -27,9 +27,9 @@ public class GrassBlades : MonoBehaviour
     public ComputeShader shader;
     public Material visualizeNoise;
     public bool viewNoise = false;
-    [Range(0,1)]
+    [Range(0, 1)]
     public float density;
-    [Range(0.1f,3)]
+    [Range(0.1f, 3)]
     public float scale;
     [Range(10, 45)]
     public float maxBend;
@@ -65,23 +65,73 @@ public class GrassBlades : MonoBehaviour
             {
                 mesh = new Mesh();
 
-                float height = 0.2f;
+                float height = Random.Range(0.1f, 0.5f);
                 float rowHeight = height / 4;
                 float halfWidth = height / 10;
 
                 //1. Use the above variables to define the vertices array
+                Vector3[] vertices =
+                {
+                    new Vector3(-halfWidth, 0, 0),
+                    new Vector3( halfWidth, 0, 0),
+                    new Vector3(-halfWidth, rowHeight, 0),
+                    new Vector3( halfWidth, rowHeight, 0),
+                    new Vector3(-halfWidth * 0.9f, rowHeight * 2.0f, 0),
+                    new Vector3( halfWidth * 0.9f, rowHeight * 2.0f, 0),
+                    new Vector3(-halfWidth * 0.8f, rowHeight * 3.0f, 0),
+                    new Vector3( halfWidth * 0.8f, rowHeight * 3.0f, 0),
+                    new Vector3(0, rowHeight * 4.0f, 0)
+                };
+
 
                 //2. Define the normals array, hint: each vertex uses the same normal
                 Vector3 normal = new Vector3(0, 0, -1);
+                Vector3[] normals =
+                {
+                    normal,
+                    normal,
+                    normal,
+                    normal,
+                    normal,
+                    normal,
+                    normal,
+                    normal,
+                    normal
+                };
 
                 //3. Define the uvs array
+                Vector2[] uvs =
+                {
+                    new Vector2(0.0f, 0.0f),
+                    new Vector2(1.0f, 0.0f),
+                    new Vector2(0.0f, 1.0f / 4.0f),
+                    new Vector2(1.0f, 1.0f / 4.0f),
+                    new Vector2(0.05f, 2.0f / 4.0f),
+                    new Vector2(0.95f, 2.0f / 4.0f),
+                    new Vector2(0.1f, 3.0f / 4.0f),
+                    new Vector2(0.9f, 3.0f / 4.0f),
+                    new Vector2(0.5f, 1.0f),
+                };
 
                 //4. Define the indices array
+                int[] indices =
+                {
+                    0, 1, 2,
+                    1, 3, 2,
+                    2, 3, 4,
+                    3, 5, 4,
+                    4, 5, 6,
+                    5, 7, 6,
+                    6, 7, 8
+                };
 
                 //5. Assign the mesh properties using the arrays
                 //   for indices use
                 //   mesh.SetIndices( indices, MeshTopology.Triangles, 0 );
-
+                mesh.vertices = vertices;
+                mesh.normals = normals;
+                mesh.uv = uvs;
+                mesh.SetIndices(indices, MeshTopology.Triangles, 0);
             }
 
             return mesh;
@@ -108,7 +158,8 @@ public class GrassBlades : MonoBehaviour
             renderer.material = (viewNoise) ? visualizeNoise : groundMaterial;
 
             //TO DO: set wind using wind direction, speed and noise scale
-            Vector4 wind = new Vector4();
+            float theta = windDirection * (Mathf.PI/180.0f);
+            Vector4 wind = new Vector4(Mathf.Cos(theta), Mathf.Sin(theta), windSpeed, windScale);
             shader.SetVector("wind", wind);
             visualizeNoise.SetVector("wind", wind);
         }
@@ -135,9 +186,9 @@ public class GrassBlades : MonoBehaviour
 
         bladesArray = new GrassBlade[count];
 
-        for(int i=0; i<count; i++)
+        for (int i = 0; i < count; i++)
         {
-            Vector3 pos = new Vector3( Random.value * bounds.extents.x * 2 - bounds.extents.x + bounds.center.x,
+            Vector3 pos = new Vector3(Random.value * bounds.extents.x * 2 - bounds.extents.x + bounds.center.x,
                                        0,
                                        Random.value * bounds.extents.z * 2 - bounds.extents.z + bounds.center.z);
             pos = transform.TransformPoint(pos);
@@ -150,7 +201,8 @@ public class GrassBlades : MonoBehaviour
         shader.SetBuffer(kernelBendGrass, "bladesBuffer", bladesBuffer);
         shader.SetFloat("maxBend", maxBend * Mathf.PI / 180);
         //TO DO: set wind using wind direction, speed and noise scale
-        Vector4 wind = new Vector4();
+        float theta = windDirection * (Mathf.PI / 180.0f);
+        Vector4 wind = new Vector4(Mathf.Cos(theta), Mathf.Sin(theta), windSpeed, windScale);
         shader.SetVector("wind", wind);
 
         timeID = Shader.PropertyToID("time");

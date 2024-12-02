@@ -78,7 +78,14 @@ public class InstancedFlocking : MonoBehaviour
         boidsBuffer.SetData(boidsArray);
 
         //Initialize args buffer
+        argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
+        if(boidMesh != null)
+        {
+            args[0] = (uint)boidMesh.GetIndexCount(0);
+            args[1] = (uint)numOfBoids;
+        }
 
+        argsBuffer.SetData(args);
 
         shader.SetBuffer(this.kernelHandle, "boidsBuffer", boidsBuffer);
         shader.SetFloat("rotationSpeed", rotationSpeed);

@@ -25,7 +25,8 @@ void BendGrass (uint3 id : SV_DispatchThreadID)
     //wind.xy - vector pointing in the direction of the wind
     //wind.z  - wind speed
     //wind.w  - noise scale factor
-    float noise = 0;
+    float2 offset = (blade.position.xz + wind.xy * time * wind.z) * wind.w;
+    float noise = perlin(offset.x, offset.y) * 2.0 - 1.0;
     blade.bend = noise * maxBend * blade.noise;
     
     bladesBuffer[id.x] = blade;

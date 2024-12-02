@@ -471,7 +471,10 @@ MonoBehaviour:
   scale: 0.42
   maxLean: 45
   trampler: {fileID: 1500874291}
-  trampleRadius: 1
+  trampleRadius: 0.3
+  windDirection: 275
+  windSpeed: 0.29
+  windScale: 159
 --- !u!23 &2071463610
 MeshRenderer:
   m_ObjectHideFlags: 0

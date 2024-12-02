@@ -34,7 +34,19 @@ void UpdateGrass (uint3 id : SV_DispatchThreadID)
     GrassClump clump = clumpsBuffer[id.x];
 
     //TO DO: set trample and the quaternion for the clump
-
+    float3 relativePosition = clump.position - tramplePos.xyz;
+    float distance = length(relativePosition);
+    
+    if (distance < trampleRadius)
+    {
+        clump.trample = ((trampleRadius - distance) / trampleRadius) * 0.9;
+        clump.quaternion = MapVector(float3(0, 1, 0), normalize(relativePosition));
+    }
+    else
+    {
+        clump.trample *= 0.98;
+    }
+    
     clump.lean = sin(time*speed) * maxLean * clump.noise;
 
     clumpsBuffer[id.x] = clump;

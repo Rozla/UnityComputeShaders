@@ -8,8 +8,16 @@ struct Particle
 	float life;
 };
 
+struct Vertex
+{
+    float3 position;
+    float2 uv;
+    float life;
+};
+
 // Particle's data, shared with the shader
 RWStructuredBuffer<Particle> particleBuffer;
+RWStructuredBuffer<Vertex> vertexBuffer;
 
 // Variables set from the CPU 
 float deltaTime;
@@ -63,6 +71,23 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 		respawn(id.x);
 		p = particleBuffer[id.x];
 	}
+	
+    uint index = id.x * 6;
+	
+    vertexBuffer[index].position = float3(p.position.x - halfSize, p.position.y - halfSize, p.position.z);
+    vertexBuffer[index].life = p.life;
+    vertexBuffer[index + 1].position = float3(p.position.x - halfSize, p.position.y + halfSize, p.position.z);
+    vertexBuffer[index + 1].life = p.life;
+    vertexBuffer[index + 2].position = float3(p.position.x + halfSize, p.position.y + halfSize, p.position.z);
+    vertexBuffer[index + 2].life = p.life;
+    vertexBuffer[index + 3].position = float3(p.position.x - halfSize, p.position.y - halfSize, p.position.z);
+    vertexBuffer[index + 3].life = p.life;
+    vertexBuffer[index + 4].position = float3(p.position.x + halfSize, p.position.y + halfSize, p.position.z);
+    vertexBuffer[index + 4].life = p.life;
+    vertexBuffer[index + 5].position = float3(p.position.x + halfSize, p.position.y - halfSize, p.position.z);
+    vertexBuffer[index + 5].life = p.life;
+
+
 }
 
 

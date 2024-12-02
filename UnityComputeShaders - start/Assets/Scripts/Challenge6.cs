@@ -41,6 +41,12 @@ public class Challenge6 : MonoBehaviour
     [Range(0.1f,2)]
     public float trampleRadius = 0.5f;
     //TO DO: Add wind direction (0-360), speed (0-2)  and scale (10-1000)
+    [Range(0.0f, 360.0f)]
+    public float windDirection = 180.0f;
+    [Range(0.0f, 2.0f)]
+    public float windSpeed = 1.0f;
+    [Range(10.0f, 1000.0f)]
+    public float windScale = 500.0f;
 
     ComputeBuffer clumpsBuffer;
     ComputeBuffer argsBuffer;
@@ -74,7 +80,8 @@ public class Challenge6 : MonoBehaviour
             renderer.material = (viewNoise) ? visualizeNoise : groundMaterial;
 
             //TO DO: Set wind vector
-            Vector4 wind = new Vector4();
+            float theta = windDirection * (Mathf.PI / 180.0f);
+            Vector4 wind = new Vector4(Mathf.Sin(theta), Mathf.Cos(theta), windSpeed, windScale);
             shader.SetVector("wind", wind);
             visualizeNoise.SetVector("wind", wind);
         }
@@ -115,7 +122,8 @@ public class Challenge6 : MonoBehaviour
         shader.SetFloat("maxLean", maxLean * Mathf.PI / 180);
         shader.SetFloat("trampleRadius", trampleRadius);
         //TO DO: Set wind vector
-        Vector4 wind = new Vector4();
+        float theta = windDirection * (Mathf.PI / 180.0f);
+        Vector4 wind = new Vector4(Mathf.Sin(theta), Mathf.Cos(theta), windSpeed, windScale);
         shader.SetVector("wind", wind);
         timeID = Shader.PropertyToID("time");
         tramplePosID = Shader.PropertyToID("tramplePos");

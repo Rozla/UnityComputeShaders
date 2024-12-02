@@ -47,6 +47,9 @@ void UpdateGrass (uint3 id : SV_DispatchThreadID)
     }
 
     //TO DO: Set clump.lean based on wind and perlin noise
-
+    float2 offset = (clump.position.xz + wind.xy * time * wind.z) * wind.w;
+    float noise = perlin(offset.x, offset.y) * 2.0 - 1.0;
+    clump.lean = noise * maxLean * clump.noise;
+    
     clumpsBuffer[id.x] = clump;
 }

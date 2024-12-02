@@ -787,9 +787,9 @@ MonoBehaviour:
   particleRadius: 2
   smoothingRadius: 2
   restDensity: 15
-  particleMass: 0.1
-  particleViscosity: 1
-  particleDrag: 0.025
+  particleMass: 2.59
+  particleViscosity: 5.98
+  particleDrag: 0.01
   particleMesh: {fileID: 4300000, guid: 823956ce1b683574ca519f1f470eb81d, type: 3}
   particleCount: 8000
   rowSize: 20

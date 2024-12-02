@@ -69,6 +69,21 @@ float particleMass;
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
 {
+    RigidBody body = rigidBodiesBuffer[id.x];
+    int index = body.particleIndex;
+	
+    for (int i = 0; i < body.particleCount; i++)
+    {
+        Particle particle = particlesBuffer[index];
+		
+        particle.offsetPosition = quat_mul(body.quaternion, particle.localPosition);
+        particle.position = body.position + particle.offsetPosition;
+        particle.velocity = body.velocity + cross(body.angularVelocity, particle.offsetPosition);
+		
+        particlesBuffer[index] = particle;
+		
+        index++;
+    }
 
 }
 
@@ -86,14 +101,61 @@ float particleDiameter;
 float3 CollisionReaction(int j_id, int i_id)
 {
 	float3 force = 0;
-
+    float3 relativePosition;
+    float3 particleJVelocity;
+	
+    Particle particleI = particlesBuffer[i_id];
+	
+    if (j_id < 0)
+    {
+        float3 groundParticlePosition = particleI.position;
+        float radius = particleDiameter * 0.5;
+        groundParticlePosition.y = min(-radius, particleI.position.y - radius);
+        relativePosition = groundParticlePosition - particleI.position;
+        particleJVelocity = 0;
+    }
+    else
+    {
+        Particle particleJ = particlesBuffer[j_id];
+        particleJVelocity = particleJ.velocity;
+        relativePosition = particleJ.position - particleI.position;
+    }
+	
+    float relativePositionMagnitude = length(relativePosition);
+    
+    if (relativePositionMagnitude < particleDiameter)
+    {
+        float3 relativePositionNormalized = relativePosition / relativePositionMagnitude;
+        float3 repulsiveForce = -springCoefficient * (particleDiameter - relativePositionMagnitude) * relativePositionNormalized;
+        
+        float3 relativeVelocity = particleJVelocity - particleI.velocity;
+        float3 dampingForce = dampingCoefficient * relativeVelocity;
+        
+        float3 tangentialVelocity = relativeVelocity - (dot(relativeVelocity, relativePositionNormalized) * relativePositionNormalized);
+        float3 tangentialForce = tangentialCoefficient * tangentialVelocity;
+        
+        force = repulsiveForce + dampingForce + tangentialForce;
+    }
+    
 	return force;
 }
 
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
 void CollisionDetection (uint3 id : SV_DispatchThreadID)
 {
+    float3 force = 0;
 	
+    for (int i = -1; i < particleCount; i++)
+    {
+        if (i == (int) id.x)
+            continue;
+        force += CollisionReaction(i, id.x);
+    }
+	
+    force.y -= gravityCoefficient;
+	
+    particlesBuffer[id.x].force = force;
+
 }
 
 ////////////////////////////
@@ -110,7 +172,37 @@ int activeCount;
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 {
-	
+    if (id.x < (uint) activeCount)
+    {
+        float3 linearForce = 0;
+        float3 angularForce = 0;
+        
+        RigidBody body = rigidBodiesBuffer[id.x];
+        
+        for (int i = 0; i < body.particleCount; i++)
+        {
+            Particle particle = particlesBuffer[body.particleIndex + i];
+            linearForce += particle.force;
+            angularForce += cross(particle.offsetPosition, particle.force);
+        }
+
+        float threshold = 1.0 / pow(10.0, 6);
+        
+        float bodyMass = particleMass * body.particleCount;
+        body.velocity /= 1.0 + deltaTime;
+        body.velocity += linearForceScalar * deltaTime * linearForce * bodyMass;
+        
+        if (length(body.velocity) < threshold)
+            body.velocity = 0;
+        
+        body.angularVelocity /= 1.0 + deltaTime * angularFrictionCoefficient;
+        body.angularVelocity += angularForceScalar * deltaTime * angularForce;
+        
+        if (length(body.angularVelocity) < threshold)
+            body.angularVelocity = 0;
+        
+        rigidBodiesBuffer[id.x] = body;
+    }
 }
 
 /////////////////////////////
@@ -121,5 +213,15 @@ void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputePositionAndRotation (uint3 id : SV_DispatchThreadID)
 {
-	
+    if (id.x < (uint) activeCount)
+    {
+        RigidBody body = rigidBodiesBuffer[id.x];
+        
+        body.position += body.velocity * deltaTime;
+        
+        float4 omega = float4(body.angularVelocity, 0);
+        body.quaternion = normalize(body.quaternion + deltaTime * (0.5 * quat_concat(omega, body.quaternion)));
+        
+        rigidBodiesBuffer[id.x] = body;
+    }
 }

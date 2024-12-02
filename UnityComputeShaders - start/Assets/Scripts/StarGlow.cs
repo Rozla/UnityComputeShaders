@@ -51,7 +51,48 @@ public class StarGlow : MonoBehaviour
 
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        Graphics.Blit(source, destination);
+        RenderTexture brightnessTex = RenderTexture.GetTemporary(source.width / divide, source.height / divide, source.depth, source.format);
+        RenderTexture blurredTex1 = RenderTexture.GetTemporary(brightnessTex.descriptor);
+        RenderTexture blurredTex2 = RenderTexture.GetTemporary(brightnessTex.descriptor);
+        RenderTexture compositeTex = RenderTexture.GetTemporary(brightnessTex.descriptor);
+
+
+        material.SetVector(brightnessSettingsID, new Vector3(threshold, intensity, attenuation));
+
+        Graphics.Blit(source, brightnessTex, material, 1);
+
+        float angle = 360f / numOfStreaks;
+        for (int x = 1; x <= numOfStreaks; x++)
+        {
+            Vector2 offset = (Quaternion.AngleAxis(angle * x + angleOfStreak, Vector3.forward) * Vector2.down).normalized;
+
+            material.SetVector(offsetID, offset);
+            material.SetInt(iterationID, 1);
+
+            Graphics.Blit(brightnessTex, blurredTex1, material, 2);
+
+            for(int i = 2; i < iteration; i++)
+            {
+                material.SetInt(iterationID, i);
+                Graphics.Blit(blurredTex1, blurredTex2 , material, 2);
+
+                RenderTexture temp = blurredTex1;
+                blurredTex1 = blurredTex2;
+                blurredTex2 = temp;
+            }
+
+            Graphics.Blit(blurredTex1, compositeTex, material, 3);
+        }
+
+        material.SetColor(compositeColorID, color);
+        material.SetTexture(compositeTexID, compositeTex);
+
+        Graphics.Blit(source, destination, material, 4);
+
+        RenderTexture.ReleaseTemporary(brightnessTex);
+        RenderTexture.ReleaseTemporary(blurredTex1);
+        RenderTexture.ReleaseTemporary(blurredTex2);
+        RenderTexture.ReleaseTemporary(compositeTex);
     }
 
     #endregion Method

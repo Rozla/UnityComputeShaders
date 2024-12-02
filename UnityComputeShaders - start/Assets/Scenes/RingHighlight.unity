@@ -513,9 +513,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 0986c9976237e41be9a05487d77fc21e, type: 3}
-  radius: 19.3
-  softenEdge: 33.3
-  shade: 0.573
+  radius: 12.1
+  softenEdge: 35.7
+  shade: 0.161
   trackedObject: {fileID: 190369478}
 --- !u!1 &1775990536
 GameObject:
